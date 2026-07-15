@@ -1,0 +1,28 @@
+{% load tailwind_tags %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Asosiy sahifa{% endblock %}</title>
+    {% tailwind_css %}
+</head>
+<body>
+    <div class="container" class="bg-gray-100 text-gray-900 align-center justify-center">
+        <header>
+            <h4>Django Darslari</h4>
+            <hr>
+        </header>
+
+        <main>
+            {% block content %}
+            {% endblock %}
+        </main>
+
+        <footer>
+            <hr>
+            <p style="text-align: center; color: #777;">&copy; 2026 Django Darslari</p>
+        </footer>
+    </div>
+</body>
+</html>
