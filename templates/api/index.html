@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}API Sozlamalari | Django Darslari{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 py-4">
+    
+    <!-- Sarlavha qismi -->
+    <div class="border-b border-slate-200 pb-5">
+        <h1 class="text-3xl font-extrabold tracking-tight text-slate-900">API Kalitlari (Tokens)</h1>
+        <p class="text-sm text-slate-500 mt-2">
+            Tizim integratsiyalari uchun yangi tokenlar yarating yoki mavjudlarini boshqaring.
+        </p>
+    </div>
+
+    <!-- 2 ta ustunli qism: Chapda Forma, O'ngda Ma'lumot yoki Yo'riqnoma -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Yangi token qo'shish formasi -->
+        <div class="md:col-span-1 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Yangi Token Qo'shish
+            </h3>
+            
+            <form method="POST" action="{% url 'api:create_token' %}" class="space-y-4">
+                {% csrf_token %}
+                
+                <!-- Token Nomi Input -->
+                <div class="space-y-1">
+                    <label for="token_name" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Token Nomi</label>
+                    <input type="text" id="token_name" name="name" required placeholder="Masalan: Telegram Bot, Webhook" 
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-sm text-slate-800 placeholder:text-slate-400">
+                </div>
+
+                <!-- Token Qiymati Input -->
+                <div class="space-y-1">
+                    <label for="token_value" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Token (API Key)</label>
+                    <div class="relative">
+                        <input type="password" id="token_value" name="token" required placeholder="API kalitini kiriting" 
+                               class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-sm text-slate-800 placeholder:text-slate-400">
+                        <!-- Ko'zcha tugmasi (Tokenni ko'rish/yashirish uchun) -->
+                        <button type="button" onclick="toggleTokenVisibility()" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none">
+                            <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Saqlash tugmasi -->
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-100 hover:shadow-lg transition-all duration-200 text-sm">
+                    Saqlash
+                </button>
+            </form>
+        </div>
+
+        <!-- Tokenlar ro'yxati jadvali -->
+        <div class="md:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
+
+            {% if tokens %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200/80">
+                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Nomi</th>
+                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Token</th>
+                                <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Yaratilgan sana</th>
+                                <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm">
+
+                            {% for token in tokens %}
+                            <!-- Statik namunaviy ma'lumot (Djangodan ma'lumot kelganda buni loop qilishingiz mumkin) -->
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4 font-semibold text-slate-800">{{ token.name }}</td>
+                                <td class="px-6 py-4 font-mono text-xs text-slate-500 flex items-center gap-1.5">
+                                    <span>{{ token.token|truncatechars:15 }}</span>
+                                    
+                                    <!-- Nusxalash tugmasi -->
+                                    <button onclick="copyToClipboard('{{ token.token|escapejs }}', this)" 
+                                            class="text-slate-400 hover:text-indigo-600 transition-all duration-200 focus:outline-none" 
+                                            title="Nusxalash">
+                                        <svg class="w-4 h-4 inline-block cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 text-xs">{{ token.created_at|date:"d.m.Y" }}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <form method="POST" action="{% url 'api:delete_token' token.id %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all">
+                                            O'chirish
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-8 text-center space-y-2">
+                    <p class="text-slate-400 text-sm">Hali birorta ham API token kiritilmagan.</p>
+                </div> 
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- Input parolini ko'rsatish/yashirish uchun skript -->
+<script>
+function toggleTokenVisibility() {
+    const tokenInput = document.getElementById('token_value');
+    const eyeIcon = document.getElementById('eye-icon');
+    if (tokenInput.type === 'password') {
+        tokenInput.type = 'text';
+        // Ko'zcha ikonkasini chiziqli ko'zga almashtirish
+        eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+        `;
+    } else {
+        tokenInput.type = 'password';
+        // Standart ko'zcha ikonasi
+        eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        `;
+    }
+}
+
+function copyToClipboard(text, element) {
+    // Brauzerning clipboard API-sidan foydalanamiz
+    navigator.clipboard.writeText(text).then(() => {
+        // Asl ikonkani saqlab turamiz
+        const originalHTML = element.innerHTML;
+        
+        // Rangni yashilga o'zgartiramiz va muvaffaqiyatli (Check) ikonkasini joylaymiz
+        element.classList.remove('text-slate-400', 'hover:text-indigo-600');
+        element.classList.add('text-emerald-500');
+        element.innerHTML = `
+            <svg class="w-4 h-4 inline-block animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        `;
+        
+        // 1.5 soniyadan keyin ikonkani eski holiga qaytaramiz
+        setTimeout(() => {
+            element.classList.remove('text-emerald-500');
+            element.classList.add('text-slate-400', 'hover:text-indigo-600');
+            element.innerHTML = originalHTML;
+        }, 1500);
+    }).catch(err => {
+        console.error('Nusxalashda xatolik yuz berdi:', err);
+    });
+}
+</script>
+{% endblock %}

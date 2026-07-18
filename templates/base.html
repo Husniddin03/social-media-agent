@@ -1,28 +1,81 @@
 {% load tailwind_tags %}
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="uz" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Asosiy sahifa{% endblock %}</title>
+    <title>{% block title %}Django Darslari{% endblock %}</title>
     {% tailwind_css %}
 </head>
-<body>
-    <div class="container" class="bg-gray-100 text-gray-900 align-center justify-center">
-        <header>
-            <h4>Django Darslari</h4>
-            <hr>
-        </header>
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen font-sans antialiased overflow-x-hidden">
 
-        <main>
-            {% block content %}
-            {% endblock %}
-        </main>
+    <!-- Header (Navigatsiya) -->
+    <header class="bg-white border-b border-slate-200/80 sticky top-0 z-50 backdrop-blur-md bg-white/90">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <span class="bg-indigo-600 text-white p-2 rounded-lg font-bold text-lg leading-none shadow-md shadow-indigo-200">DJ</span>
+                <span class="font-bold text-xl tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Django Darslari</span>
+            </a>
+            <nav class="flex items-center gap-4">
+                <a href="{% url 'api:index' %}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Api</a>
+                <a href="/admin" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Admin panel</a>
+            </nav>
+        </div>
+    </header>
 
-        <footer>
-            <hr>
-            <p style="text-align: center; color: #777;">&copy; 2026 Django Darslari</p>
-        </footer>
-    </div>
+    <!-- Asosiy kontent maydoni -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-6">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-sm text-slate-500 text-center md:text-left order-2 md:order-1">
+                &copy; 2026 Django Darslari. Barcha huquqlar himoyalangan.
+            </p>
+            
+            <!-- Interaktiv Ijtimoiy tarmoqlar (Faqat xavfsiz SVG ikonkalar bilan) -->
+            <div class="flex items-center justify-center gap-3 order-1 md:order-2">
+                
+                <!-- Telegram -->
+                <a href="https://t.me/" target="_blank" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-sky-100 hover:text-sky-500 transition-all duration-300">
+                    <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.35-.49.97-.74 3.79-1.65 6.32-2.73 7.59-3.25 3.61-1.48 4.36-1.74 4.85-1.75.11 0 .35.03.51.16.13.11.17.26.19.37z"/>
+                    </svg>
+                </a>
+
+                <!-- Instagram -->
+                <a href="https://instagram.com/" target="_blank" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-pink-100 hover:text-pink-500 transition-all duration-300">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                    </svg>
+                </a>
+
+                <!-- Facebook -->
+                <a href="https://facebook.com/" target="_blank" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all duration-300">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                </a>
+
+                <!-- YouTube -->
+                <a href="https://youtube.com/" target="_blank" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-red-100 hover:text-red-600 transition-all duration-300">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M23.498 6.163a3.003 3.003 0 00-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.507a3.003 3.003 0 00-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 002.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.388-.507a3.003 3.003 0 002.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                </a>
+
+                <!-- TikTok -->
+                <a href="https://tiktok.com/" target="_blank" class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-black hover:text-white transition-all duration-300">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.17.94.94 2.22 1.5 3.56 1.6v3.82c-1.88-.04-3.71-.84-5.06-2.13v7.46c0 3.47-2.31 6.64-5.74 7.22-3.83.75-7.56-1.57-8.43-5.32-.97-3.69 1.14-7.66 4.81-8.5 1.15-.29 2.37-.14 3.41.4v3.94c-1.34-.73-3.11-.47-4.14.61-.92 1.05-.88 2.7.11 3.69 1.1 1.04 2.94.9 3.86-.33.36-.53.51-1.18.49-1.82V0c-.01.01-.01.01-.02.02z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
 </body>
 </html>

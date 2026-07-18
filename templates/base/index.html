@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Asosiy sahifa | Django Darslari{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-10 py-4">
+    
+    <!-- Hero Section -->
+    <div class="text-center space-y-4">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            Bizning ijtimoiy tarmoqlarimiz
+        </h1>
+        <p class="text-lg text-slate-500 max-w-xl mx-auto">
+            Django darslari, yangiliklar va qiziqarli loyihalarimizni quyidagi ijtimoiy tarmoqlardagi sahifalarimiz orqali kuzatib boring.
+        </p>
+    </div>
+
+    <!-- Interaktiv Kartochkalar To'plami -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        
+        <!-- Telegram -->
+        <a href="{% url 'base:telegram' %}" class="group relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-sky-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-44">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-sky-50 rounded-full group-hover:scale-125 transition-transform duration-500 -z-0"></div>
+            <div class="z-10">
+                <span class="w-12 h-12 rounded-xl bg-sky-100 text-sky-500 flex items-center justify-center mb-4 group-hover:bg-sky-500 group-hover:text-white transition-all duration-300">
+                    <!-- Telegram SVG -->
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.54 3.69-.52.36-1 .53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.35-.49.97-.74 3.79-1.65 6.32-2.73 7.59-3.25 3.61-1.48 4.36-1.74 4.85-1.75.11 0 .35.03.51.16.13.11.17.26.19.37z"/>
+                    </svg>
+                </span>
+                <h3 class="font-bold text-lg text-slate-800">Telegram</h3>
+                <p class="text-sm text-slate-400 mt-1">Darslar va foydali materiallar</p>
+            </div>
+            <div class="z-10 flex items-center gap-1 text-xs font-semibold text-sky-500 mt-2">
+                A'zo bo'lish <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Instagram -->
+        <a href="https://instagram.com/" class="group relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-pink-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-44">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-pink-50 rounded-full group-hover:scale-125 transition-transform duration-500 -z-0"></div>
+            <div class="z-10">
+                <span class="w-12 h-12 rounded-xl bg-pink-100 text-pink-500 flex items-center justify-center mb-4 group-hover:bg-gradient-to-tr group-hover:from-yellow-500 group-hover:via-pink-500 group-hover:to-purple-600 group-hover:text-white transition-all duration-300">
+                    <!-- Instagram SVG -->
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                    </svg>
+                </span>
+                <h3 class="font-bold text-lg text-slate-800">Instagram</h3>
+                <p class="text-sm text-slate-400 mt-1">Loyiha jarayonlaridan lavhalar</p>
+            </div>
+            <div class="z-10 flex items-center gap-1 text-xs font-semibold text-pink-500 mt-2">
+                Kuzatish <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Facebook -->
+        <a href="https://facebook.com/" class="group relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-44">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-125 transition-transform duration-500 -z-0"></div>
+            <div class="z-10">
+                <span class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <!-- Facebook SVG -->
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                </span>
+                <h3 class="font-bold text-lg text-slate-800">Facebook</h3>
+                <p class="text-sm text-slate-400 mt-1">Katta hamjamiyat bilan muloqot</p>
+            </div>
+            <div class="z-10 flex items-center gap-1 text-xs font-semibold text-blue-600 mt-2">
+                Sahifaga o'tish <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- YouTube -->
+        <a href="https://youtube.com/" class="group relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-red-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-44">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-red-50 rounded-full group-hover:scale-125 transition-transform duration-500 -z-0"></div>
+            <div class="z-10">
+                <span class="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center mb-4 group-hover:bg-red-600 group-hover:text-white transition-all duration-300">
+                    <!-- YouTube SVG -->
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                        <path d="M23.498 6.163a3.003 3.003 0 00-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.507a3.003 3.003 0 00-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 002.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.388-.507a3.003 3.003 0 002.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                </span>
+                <h3 class="font-bold text-lg text-slate-800">YouTube</h3>
+                <p class="text-sm text-slate-400 mt-1">To'liq va amaliy video darslar</p>
+            </div>
+            <div class="z-10 flex items-center gap-1 text-xs font-semibold text-red-600 mt-2">
+                Obuna bo'lish <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- TikTok -->
+        <a href="https://tiktok.com/" class="group relative overflow-hidden bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-slate-400 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-44">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-slate-100 rounded-full group-hover:scale-125 transition-transform duration-500 -z-0"></div>
+            <div class="z-10">
+                <span class="w-12 h-12 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center mb-4 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                    <!-- TikTok SVG -->
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.17.94.94 2.22 1.5 3.56 1.6v3.82c-1.88-.04-3.71-.84-5.06-2.13v7.46c0 3.47-2.31 6.64-5.74 7.22-3.83.75-7.56-1.57-8.43-5.32-.97-3.69 1.14-7.66 4.81-8.5 1.15-.29 2.37-.14 3.41.4v3.94c-1.34-.73-3.11-.47-4.14.61-.92 1.05-.88 2.7.11 3.69 1.1 1.04 2.94.9 3.86-.33.36-.53.51-1.18.49-1.82V0c-.01.01-.01.01-.02.02z"/>
+                    </svg>
+                </span>
+                <h3 class="font-bold text-lg text-slate-800">TikTok</h3>
+                <p class="text-sm text-slate-400 mt-1">Kaltacha dasturlash layfhaklari</p>
+            </div>
+            <div class="z-10 flex items-center gap-1 text-xs font-semibold text-slate-800 mt-2">
+                Kuzatish <span class="group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+        </a>
+
+    </div>
+</div>
+{% endblock %}z
