@@ -102,6 +102,7 @@ STATIC_URL = 'static/'
 
 LOGIN_REDIRECT_URL = '/api/'
 LOGIN_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/'
 
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
