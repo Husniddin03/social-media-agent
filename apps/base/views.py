@@ -195,15 +195,15 @@ def chat_add(request):
             messages.error(request, "Telethon kutubxonasi o'rnatilmagan!")
             return redirect('base:chat_list')
         
-        # SocialAccount yaratish (pending status)
         platform = SocialPlatform.objects.get(slug='telegram')
         
-        # Agar shu telefonga pending account bo'lsa, eski accountni o'chirib yangisini yaratamiz
+        # Eski pending accountlarni o'chirish
         SocialAccount.objects.filter(
             user=request.user, platform=platform, account_type='user',
             external_id=phone, status='pending'
         ).delete()
         
+        # Yangi account yaratish
         account = SocialAccount.objects.create(
             user=request.user,
             platform=platform,
@@ -217,47 +217,41 @@ def chat_add(request):
         )
         AgentConfig.objects.get_or_create(social_account=account, defaults={'is_enabled': True})
         
-        # Telegram auth code yuborish
+        # Telegram'dan kod so'rash — faqat phone_code_hash ni saqlaymiz, session saqlanmaydi!
+        error = None
         try:
             async def send_code():
                 client = TelegramClient(StringSession(), int(api_id), api_hash)
                 try:
                     await client.connect()
-                    if not await client.is_user_authorized():
-                        result = await client.send_code_request(phone)
-                        account.auth_code_hash = result.phone_code_hash
-                        session_str = StringSession.save(client.session)
-                        account.session_data = session_str
-                        account.save(update_fields=['auth_code_hash', 'session_data'])
-                        return True
-                    else:
-                        account.status = 'active'
-                        account.is_connected = True
-                        account.display_name = f"User {phone[-4:]}"
-                        account.save()
-                        return False
+                    result = await client.send_code_request(phone)
+                    account.auth_code_hash = result.phone_code_hash
+                    account.save(update_fields=['auth_code_hash'])
                 finally:
                     try:
                         await client.disconnect()
                     except:
                         pass
-            
-            need_verify = run_async(send_code())
-            if need_verify:
-                messages.success(request, f"{phone} ga kod yuborildi! Telegram'dan kelgan kodni kiriting.")
-                return render(request, 'base/chat_verify.html', {'account': account})
-            else:
-                messages.success(request, "Account allaqachon ulangan!")
+            run_async(send_code())
         except Exception as e:
             logger.exception("Auth code xatosi")
-            messages.error(request, f"Xatolik: Telefon raqam yoki API ma'lumotlarini tekshiring")
-        return redirect('base:chat_list')
+            error = f"Kod yuborishda xatolik: {str(e)[:100]}. Telefon raqam va API ma'lumotlarini tekshiring."
+        
+        # HAR DOIM verify sahifasiga o'tamiz (xato bo'lsa ham!)
+        return render(request, 'base/chat_verify.html', {
+            'account': account,
+            'error': error,
+        })
     return redirect('base:chat_list')
 
 
 @login_required
 def chat_verify(request, account_id):
     """Auth code ni tasdiqlash - GET (form) va POST (process)"""
+    """
+    MUHIM: Yangi client yaratiladi, eski session RESTORE QILINMAYDI!
+    Faqat phone_code_hash ishlatiladi — Telegram API shartiga ko'ra.
+    """
     account = get_object_or_404(SocialAccount, id=account_id, user=request.user, account_type='user')
     
     # GET so'rov - formani ko'rsatish
@@ -273,30 +267,35 @@ def chat_verify(request, account_id):
             'account': account, 'error': "Iltimos, Telegram'dan kelgan kodni kiriting!"
         })
     
+    if not account.auth_code_hash:
+        return render(request, 'base/chat_verify.html', {
+            'account': account, 'error': "Kod eskirgan! Accountni o'chirib, qaytadan urinib ko'ring."
+        })
+    
     try:
         async def verify_code():
-            session_str = account.session_data or ''
-            session = StringSession(session_str) if session_str else StringSession()
-            client = TelegramClient(session, int(account.api_id), account.api_hash)
+            # YANGI client — session restore qilmaymiz!
+            client = TelegramClient(StringSession(), int(account.api_id), account.api_hash)
             try:
                 await client.connect()
                 
-                # phone_code_hash ni eksplitsit uzatamiz (StringSession dan o'qilmasligi mumkin)
-                kwargs = {'phone': account.phone, 'code': code}
-                if account.auth_code_hash:
-                    kwargs['phone_code_hash'] = account.auth_code_hash
+                # Faqat phone_code_hash ni ishlatib sign_in qilamiz
+                kwargs = {
+                    'phone': account.phone,
+                    'code': code,
+                    'phone_code_hash': account.auth_code_hash,
+                }
                 if password:
                     kwargs['password'] = password
                 
-                await client.sign_in(**kwargs)
+                user = await client.sign_in(**kwargs)
                 
+                # Muvaffaqiyatli — sessionni saqlaymiz
                 account.session_data = StringSession.save(client.session)
                 account.status = 'active'
                 account.is_connected = True
-                
-                me = await client.get_me()
-                account.display_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or account.phone
-                account.external_id = str(me.id)
+                account.display_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or account.phone
+                account.external_id = str(user.id)
                 account.save()
                 return 'success'
             finally:
@@ -315,6 +314,10 @@ def chat_verify(request, account_id):
             return render(request, 'base/chat_verify.html', {
                 'account': account, 'error': "Kod noto'g'ri! Qaytadan urinib ko'ring."
             })
+        elif 'PHONE_CODE_EXPIRED' in error_msg:
+            return render(request, 'base/chat_verify.html', {
+                'account': account, 'error': "Kod muddati tugagan! Accountni o'chirib, qaytadan kod so'rang."
+            })
         elif 'SESSION_PASSWORD_NEEDED' in error_msg:
             return render(request, 'base/chat_verify.html', {
                 'account': account, 'need_password': True
@@ -322,7 +325,7 @@ def chat_verify(request, account_id):
         else:
             logger.exception("Verify xatosi")
             return render(request, 'base/chat_verify.html', {
-                'account': account, 'error': f"Xatolik: {error_msg[:150]}"
+                'account': account, 'error': f"Xatolik: {error_msg[:200]}"
             })
     
     return redirect('base:chat_list')
