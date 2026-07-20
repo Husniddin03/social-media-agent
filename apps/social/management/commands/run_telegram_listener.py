@@ -1,20 +1,20 @@
 """
-Telegram user account'lardan kiruvchi xabarlarni tinglash.
+Telegram user account'lardan kiruvchi xabarlarni tinglash (to'g'ri async).
+
 Ishlatish: python manage.py run_telegram_listener
 
-Bu command HAR DOIM ishlab turishi kerak (background worker).
-Render'da: python manage.py run_telegram_listener &
+Bu command DOIMIY ishlab turishi kerak (background worker).
 """
-import base64
+import asyncio
 import logging
-import pickle
-import time
 
 from django.core.management.base import BaseCommand
-from django.utils import timezone
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+from telethon.events import NewMessage
 
 from apps.social.models import SocialAccount
-from apps.agents.models import AgentConfig, ConversationLog, UsageStats
+from apps.agents.models import AgentConfig
 from apps.agents.dispatcher import handle_incoming
 
 logger = logging.getLogger('apps.telegram.listener')
@@ -25,80 +25,79 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("🤖 Telegram listener ishga tushdi...")
-        
+        asyncio.run(self._run_listener())
+
+    async def _run_listener(self):
         while True:
             accounts = SocialAccount.objects.filter(
-                platform__slug='telegram',
-                account_type='user',
-                status='active',
-                is_connected=True,
+                platform__slug='telegram', account_type='user',
+                status='active', is_connected=True,
             )
             
             if not accounts.exists():
-                self.stdout.write("Faol account topilmadi, 10s kutiladi...")
-                time.sleep(10)
+                await asyncio.sleep(10)
                 continue
             
+            # Har bir account uchun alohida client yaratish
+            clients = []
             for account in accounts:
                 if not account.session_data:
                     continue
-                    
                 try:
-                    self._listen_account(account)
+                    client = TelegramClient(
+                        StringSession(account.session_data),
+                        int(account.api_id), account.api_hash,
+                    )
+                    await client.start()
+                    
+                    agent_config = await self._get_agent_config(account)
+                    if agent_config:
+                        client.add_event_handler(
+                            lambda e, a=account: self._message_handler(e, a)
+                        )
+                    clients.append(client)
+                    self.stdout.write(f"  ✅ {account.display_name} ulandi")
                 except Exception as e:
-                    logger.exception(f"Listener xatosi: {account.display_name}")
-                    account.status = 'error'
-                    account.save(update_fields=['status'])
+                    logger.warning(f"{account.display_name} ulanishda xato: {e}")
             
-            self.stdout.write(f"{accounts.count()} ta account tekshirildi, 5s kutiladi...")
-            time.sleep(5)
+            if clients:
+                self.stdout.write(f"  {len(clients)} ta account tinglanmoqda...")
+                # Barcha client'larni birga ishga tushirish
+                await asyncio.gather(*(c.run_until_disconnected() for c in clients))
+            
+            await asyncio.sleep(5)
     
-    def _listen_account(self, account):
-        """Bitta account uchun xabarlarni tinglash"""
-        from telethon import TelegramClient
-        from telethon.events import NewMessage
-        from telethon.tl.types import Message
-        
-        session_data = pickle.loads(base64.b64decode(account.session_data))
-        
-        client = TelegramClient(f'listener_{account.id}', int(account.api_id), account.api_hash)
-        client.session.save(session_data)
-        client.start()
-        
-        agent_config = AgentConfig.objects.filter(
-            social_account=account, is_enabled=True
-        ).first()
-        
-        if not agent_config:
-            client.disconnect()
+    async def _get_agent_config(self, account):
+        """Async'da AgentConfig ni olish"""
+        from asgiref.sync import sync_to_async
+        return await sync_to_async(
+            AgentConfig.objects.filter(
+                social_account=account, is_enabled=True
+            ).first
+        )()
+    
+    async def _message_handler(self, event, account):
+        """Kiruvchi xabarni qayta ishlash"""
+        message = event.message
+        if not message.text or message.out:
             return
         
-        @client.on(NewMessage(incoming=True))
-        async def handler(event):
-            message = event.message
-            if not message.text:
-                return
-            
-            # O'z xabarlarimizni filter (bot/self messages)
-            if message.out:
-                return
-            
-            sender = await message.get_sender()
-            sender_id = str(sender.id) if sender else 'unknown'
-            sender_name = f"{sender.first_name or ''} {sender.last_name or ''}".strip() or sender_id
-            
-            # Dispatcher'ga yuborish
-            result = handle_incoming(
-                social_account=account,
-                external_user_id=sender_id,
-                external_user_name=sender_name,
-                message_text=message.text,
-            )
-            
-            # Javobni yuborish
-            response_text = result.get('response_text', '')
-            if response_text:
-                await client.send_message(sender_id, response_text)
+        sender = await message.get_sender()
+        sender_id = str(sender.id) if sender else 'unknown'
+        sender_name = f"{sender.first_name or ''} {sender.last_name or ''}".strip() or sender_id
         
-        self.stdout.write(f"  👂 {account.display_name} tinglanmoqda...")
-        client.run_until_disconnected()
+        result = await self._dispatch_message(account, sender_id, sender_name, message.text)
+        
+        response_text = result.get('response_text', '')
+        if response_text:
+            await event.client.send_message(sender_id, response_text)
+    
+    async def _dispatch_message(self, account, user_id, user_name, text):
+        """Dispatcher'ga sync chaqiruv"""
+        from asgiref.sync import sync_to_async
+        return await sync_to_async(handle_incoming)(
+            social_account=account,
+            external_user_id=user_id,
+            external_user_name=user_name,
+            message_text=text,
+        )

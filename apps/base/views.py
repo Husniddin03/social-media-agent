@@ -1,8 +1,8 @@
 import json
 import logging
 import requests
-import base64
-import pickle
+import asyncio
+from telethon.sessions import StringSession
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -187,23 +187,30 @@ def chat_add(request):
         
         # Telegram auth code yuborish
         try:
+            async def send_code():
+                client = TelegramClient(StringSession(), int(api_id), api_hash)
+                await client.connect()
+                if not await client.is_user_authorized():
+                    result = await client.send_code_request(phone)
+                    account.auth_code_hash = result.phone_code_hash
+                    account.session_data = StringSession.save(client.session)
+                    await client.disconnect()
+                    account.save(update_fields=['auth_code_hash', 'session_data'])
+                    return True
+                else:
+                    account.status = 'active'
+                    account.is_connected = True
+                    account.display_name = f"User {phone[-4:]}"
+                    account.save()
+                    await client.disconnect()
+                    return False
+            
             from telethon import TelegramClient
-            client = TelegramClient(f'session_{account.id}', int(api_id), api_hash)
-            client.connect()
-            if not client.is_user_authorized():
-                result = client.send_code_request(phone)
-                # Store the phone_code_hash for verification
-                account.auth_code_hash = result.phone_code_hash
-                account.session_data = base64.b64encode(pickle.dumps(client.session.save())).decode()
-                account.save(update_fields=['auth_code_hash', 'session_data'])
-                client.disconnect()
+            need_verify = asyncio.run(send_code())
+            if need_verify:
                 messages.success(request, f"{phone} ga kod yuborildi! Telegram'dan kelgan kodni kiriting.")
                 return render(request, 'base/chat_verify.html', {'account': account})
             else:
-                account.status = 'active'
-                account.is_connected = True
-                account.display_name = f"User {phone[-4:]}"
-                account.save()
                 messages.success(request, "Account allaqachon ulangan!")
         except Exception as e:
             logger.exception("Auth code xatosi")
@@ -225,35 +232,31 @@ def chat_verify(request, account_id):
         return redirect('base:chat_list')
     
     try:
-        from telethon import TelegramClient
-        from telethon.tl.functions.messages import GetDialogsRequest
-        from telethon.tl.types import InputPeerEmpty
+        async def verify_code():
+            from telethon import TelegramClient
+            session = StringSession(account.session_data) if account.session_data else StringSession()
+            client = TelegramClient(session, int(account.api_id), account.api_hash)
+            await client.connect()
+            
+            if password:
+                await client.sign_in(phone=account.phone, code=code, password=password)
+            else:
+                await client.sign_in(phone=account.phone, code=code)
+            
+            account.session_data = StringSession.save(client.session)
+            account.status = 'active'
+            account.is_connected = True
+            
+            me = await client.get_me()
+            account.display_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or account.phone
+            account.external_id = str(me.id)
+            await client.disconnect()
+            account.save()
+            return True
         
-        session_data = pickle.loads(base64.b64decode(account.session_data)) if account.session_data else None
-        client = TelegramClient(f'session_{account.id}', int(account.api_id), account.api_hash)
-        if session_data:
-            client.session.save(session_data)
-        client.connect()
-        
-        if password:
-            client.sign_in(phone=account.phone, code=code, password=password)
-        else:
-            client.sign_in(phone=account.phone, code=code)
-        
-        # Session data ni saqlash
-        account.session_data = base64.b64encode(pickle.dumps(client.session.save())).decode()
-        account.status = 'active'
-        account.is_connected = True
-        
-        # User ma'lumotlarini olish
-        me = client.get_me()
-        account.display_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or account.phone
-        account.external_id = str(me.id)
-        account.save()
-        
-        # Dialogni boshlash (listener worker uchun)
-        client.disconnect()
-        messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
+        success = asyncio.run(verify_code())
+        if success:
+            messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
     except Exception as e:
         error_msg = str(e)
         if 'PHONE_CODE_INVALID' in error_msg:
