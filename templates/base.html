@@ -18,9 +18,10 @@
                 <span class="bg-indigo-600 text-white p-2 rounded-lg font-bold text-lg leading-none shadow-md shadow-indigo-200">DJ</span>
                 <span class="font-bold text-xl tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Django Darslari</span>
             </a>
-            <nav class="flex items-center gap-4">
-                <a href="{% url 'api:manager' %}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Api</a>
-                <a href="/admin" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Admin panel</a>
+            <nav class="flex items-center gap-2">
+                <a href="{% url 'social_telegram:dashboard' %}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Dashboard</a>
+                <a href="{% url 'api:manager' %}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">API Keys</a>
+                <a href="/admin" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Admin</a>
             </nav>
         </div>
     </header>
