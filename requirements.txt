@@ -14,6 +14,7 @@ Django==5.2.15
 django-debug-toolbar==7.0.0
 django-environ==0.14.0
 django-tailwind==4.5.0
+djangorestframework==3.17.1
 flatbuffers==25.12.19
 fonttools==4.63.0
 gunicorn==26.0.0
