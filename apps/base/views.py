@@ -162,13 +162,19 @@ def bot_reconnect(request, account_id):
 # ===== Asinxron Telethon operatsiyalari uchun yordamchi =====
 
 def run_async(coro):
-    """asyncio.run() o'rniga — loop.new_event_loop() bilan xavfsiz ishlatish"""
-    loop = asyncio.new_event_loop()
+    """Asinxron kodni sinxron muhitda ishga tushirish"""
+    created = False
     try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        created = True
+    try:
         return loop.run_until_complete(coro)
     finally:
-        loop.close()
+        if created:
+            loop.close()
 
 
 # ===== CHAT (User Account) views =====
@@ -182,7 +188,7 @@ def chat_list(request):
 
 @login_required
 def chat_add(request):
-    """Chat account qo'shish formasi"""
+    """Chat account qo'shish — kod so'rash va verify sahifasiga yo'naltirish"""
     if request.method == 'POST':
         phone = request.POST.get('phone', '').strip()
         api_id = request.POST.get('api_id', '').strip()
@@ -217,27 +223,53 @@ def chat_add(request):
         )
         AgentConfig.objects.get_or_create(social_account=account, defaults={'is_enabled': True})
         
-        # Telegram'dan kod so'rash — faqat phone_code_hash ni saqlaymiz, session saqlanmaydi!
+        # Telegram'dan kod so'rash — har bir qadam alohida try/except bilan
         error = None
         try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
             async def send_code():
                 client = TelegramClient(StringSession(), int(api_id), api_hash)
                 try:
                     await client.connect()
                     result = await client.send_code_request(phone)
                     account.auth_code_hash = result.phone_code_hash
-                    account.save(update_fields=['auth_code_hash'])
+                    account.session_data = StringSession.save(client.session)
+                    account.save(update_fields=['auth_code_hash', 'session_data'])
                 finally:
                     try:
                         await client.disconnect()
                     except:
                         pass
-            run_async(send_code())
+            
+            loop.run_until_complete(send_code())
+            loop.close()
+        except asyncio.CancelledError:
+            error = "So'rov bekor qilindi. Qayta urinib ko'ring."
+        except TimeoutError:
+            error = "Telegram serveriga ulanish vaqti tugadi. Internetingizni tekshiring."
+        except ImportError:
+            error = "Telethon kutubxonasi o'rnatilmagan!"
         except Exception as e:
-            logger.exception("Auth code xatosi")
-            error = f"Kod yuborishda xatolik: {str(e)[:100]}. Telefon raqam va API ma'lumotlarini tekshiring."
+            error_msg = str(e)
+            logger.exception("chat_add send_code xatosi: %s", error_msg)
+            if 'TIMEOUT' in error_msg or 'timeout' in error_msg:
+                error = "Telegram serveriga ulanish vaqti tugadi."
+            elif 'AUTH_KEY_UNREGISTERED' in error_msg:
+                error = "Avtorizatsiya kaliti yaroqsiz. API ID/Hash ni tekshiring."
+            elif 'PHONE_NUMBER_INVALID' in error_msg:
+                error = "Telefon raqam noto'g'ri! Xalqaro formatda kiriting (+998...)."
+            elif 'PHONE_NUMBER_BANNED' in error_msg:
+                error = "Bu telefon raqam Telegram'da bloklangan!"
+            elif 'API_ID_INVALID' in error_msg or 'API_ID_PUBLISHED_FLOOD' in error_msg:
+                error = "API ID yoki API Hash noto'g'ri! my.telegram.org dan tekshiring."
+            elif 'connection' in error_msg.lower():
+                error = "Telegram serveriga ulanishda muammo (DNS/Bloklangan)."
+            else:
+                error = f"Xatolik: {error_msg[:150]}"
         
-        # HAR DOIM verify sahifasiga o'tamiz (xato bo'lsa ham!)
+        # Verify sahifasiga o'tamiz (xato bo'lsa ham)
         return render(request, 'base/chat_verify.html', {
             'account': account,
             'error': error,
@@ -247,16 +279,12 @@ def chat_add(request):
 
 @login_required
 def chat_verify(request, account_id):
-    """Auth code ni tasdiqlash - GET (form) va POST (process)
-    MUHIM: Yangi client yaratiladi, eski session RESTORE QILINMAYDI!
-    Faqat phone_code_hash ishlatiladi — Telegram API shartiga ko'ra."""
+    """Auth code ni tasdiqlash - GET (form) va POST (process)"""
     account = get_object_or_404(SocialAccount, id=account_id, user=request.user, account_type='user')
     
-    # GET so'rov - formani ko'rsatish
     if request.method == 'GET':
         return render(request, 'base/chat_verify.html', {'account': account})
     
-    # POST so'rov - kodni tekshirish
     code = request.POST.get('code', '').strip()
     password = request.POST.get('password', '').strip()
     
@@ -265,19 +293,16 @@ def chat_verify(request, account_id):
             'account': account, 'error': "Iltimos, Telegram'dan kelgan kodni kiriting!"
         })
     
-    if not account.auth_code_hash:
-        return render(request, 'base/chat_verify.html', {
-            'account': account, 'error': "Kod eskirgan! Accountni o'chirib, qaytadan urinib ko'ring."
-        })
+    # Birinchi try: session bilan
+    error = None
+    success = False
     
-    try:
-        async def verify_code():
-            # YANGI client — session restore qilmaymiz!
-            client = TelegramClient(StringSession(), int(account.api_id), account.api_hash)
+    def attempt_sign_in(session_str):
+        async def verify():
+            session = StringSession(session_str) if session_str else StringSession()
+            client = TelegramClient(session, int(account.api_id), account.api_hash)
             try:
                 await client.connect()
-                
-                # Faqat phone_code_hash ni ishlatib sign_in qilamiz
                 kwargs = {
                     'phone': account.phone,
                     'code': code,
@@ -287,46 +312,55 @@ def chat_verify(request, account_id):
                     kwargs['password'] = password
                 
                 user = await client.sign_in(**kwargs)
-                
-                # Muvaffaqiyatli — sessionni saqlaymiz
                 account.session_data = StringSession.save(client.session)
                 account.status = 'active'
                 account.is_connected = True
                 account.display_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or account.phone
                 account.external_id = str(user.id)
                 account.save()
-                return 'success'
+                return True
             finally:
                 try:
                     await client.disconnect()
                 except:
                     pass
         
-        status = run_async(verify_code())
-        if status == 'success':
-            messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
-            return redirect('base:chat_list')
+        return run_async(verify())
+    
+    try:
+        # 1-usul: saved session bilan
+        if account.session_data:
+            success = attempt_sign_in(account.session_data)
+        
+        # 2-usul: faqat phone_code_hash bilan (agar 1-usul xato bersa)
+        if not success:
+            success = attempt_sign_in('')
     except Exception as e:
         error_msg = str(e)
         if 'PHONE_CODE_INVALID' in error_msg:
-            return render(request, 'base/chat_verify.html', {
-                'account': account, 'error': "Kod noto'g'ri! Qaytadan urinib ko'ring."
-            })
+            error = "Kod noto'g'ri! Qaytadan urinib ko'ring."
         elif 'PHONE_CODE_EXPIRED' in error_msg:
-            return render(request, 'base/chat_verify.html', {
-                'account': account, 'error': "Kod muddati tugagan! Accountni o'chirib, qaytadan kod so'rang."
-            })
+            error = "Kod muddati tugagan! Accountni o'chirib, qaytadan kod so'rang."
         elif 'SESSION_PASSWORD_NEEDED' in error_msg:
             return render(request, 'base/chat_verify.html', {
                 'account': account, 'need_password': True
             })
+        elif 'FLOOD_WAIT_' in error_msg:
+            import re
+            sec = re.search(r'(\d+)', error_msg)
+            wait = sec.group(1) if sec else '60'
+            error = f"Ko'p urinish! {wait} soniya kuting."
         else:
             logger.exception("Verify xatosi")
-            return render(request, 'base/chat_verify.html', {
-                'account': account, 'error': f"Xatolik: {error_msg[:200]}"
-            })
+            error = f"Xatolik: {error_msg[:200]}"
     
-    return redirect('base:chat_list')
+    if success:
+        messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
+        return redirect('base:chat_list')
+    
+    return render(request, 'base/chat_verify.html', {
+        'account': account, 'error': error
+    })
 
 
 @login_required
