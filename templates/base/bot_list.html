@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Botlar - AI Agent{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 py-4">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'base:telegram' %}" class="text-slate-400 hover:text-slate-600">←</a>
+        <h1 class="text-2xl font-extrabold text-slate-900">🤖 Botlar</h1>
+    </div>
+
+    <!-- Add bot form -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 class="font-bold text-slate-800 mb-4">➕ Yangi bot qo'shish</h2>
+        <form method="post" action="{% url 'base:bot_add' %}" class="flex gap-3 items-end">
+            {% csrf_token %}
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-slate-600 mb-1">Telegram Bot Token</label>
+                <input type="text" name="bot_token" placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                       class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-mono text-sm" required>
+            </div>
+            <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors whitespace-nowrap">
+                Qo'shish
+            </button>
+        </form>
+        <p class="text-xs text-slate-400 mt-2">@BotFather dan token oling. Bot avtomatik sozlanadi.</p>
+    </div>
+
+    <!-- Bot list -->
+    {% if accounts %}
+    <div class="space-y-3">
+        {% for account in accounts %}
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <span class="w-3.5 h-3.5 rounded-full 
+                        {% if account.is_connected %}bg-emerald-500{% elif account.status == 'active' %}bg-yellow-500{% else %}bg-slate-300{% endif %}">
+                    </span>
+                    <div>
+                        <h3 class="font-bold text-slate-800">{{ account.display_name }}</h3>
+                        <p class="text-sm text-slate-500">@{{ account.external_id }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'base:bot_settings' account.id %}" class="text-sm px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                        Sozlamalar
+                    </a>
+                    <form method="post" action="{% url 'base:bot_toggle' account.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 rounded-lg transition-colors
+                            {% if account.status == 'active' %}bg-amber-100 text-amber-700 hover:bg-amber-200
+                            {% else %}bg-emerald-100 text-emerald-700 hover:bg-emerald-200{% endif %}">
+                            {{ account.status|yesno:"To'xtatish,Faollashtirish" }}
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'base:bot_delete' account.id %}" class="inline"
+                          onsubmit="return confirm('{{ account.display_name }} o\'chirilsinmi?')">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">O'chirish</button>
+                    </form>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 mt-2 text-xs text-slate-400">
+                <span>Qo'shilgan: {{ account.connected_at|date:"d.m.Y H:i" }}</span>
+                <span>{% if account.is_connected %}Webhook ✅{% else %}Webhook ❌{% endif %}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+        <div class="text-5xl mb-4">🤖</div>
+        <h3 class="text-xl font-bold text-slate-700 mb-2">Hali bot qo'shilmagan</h3>
+        <p class="text-slate-500">Yuqoridagi forma orqali birinchi botingizni qo'shing!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

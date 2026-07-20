@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}API Keys - AI Agent{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 py-4">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-900">🔑 API Keys</h1>
+            <p class="text-sm text-slate-500">AI provayder kalitlarini boshqarish</p>
+        </div>
+    </div>
+
+    <!-- Add API Key form -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 class="font-bold text-slate-800 mb-4">➕ Yangi API kalit qo'shish</h2>
+        <form method="post" action="{% url 'base:api_key_add' %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Provayder</label>
+                    <select name="provider" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm" required>
+                        <option value="">-- Tanlang --</option>
+                        {% for p in providers %}
+                        <option value="{{ p.id }}">{{ p.name }} {{ p.logo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Label</label>
+                    <input type="text" name="label" placeholder="Mening OpenAI kalitim" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">API Key</label>
+                    <input type="text" name="api_key" placeholder="sk-..." class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm font-mono" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Model</label>
+                    <input type="text" name="model_name" placeholder="gpt-4o-mini" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm" required>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Base URL (ixtiyoriy, OpenAI-mos API uchun)</label>
+                <input type="text" name="base_url" placeholder="https://api.openai.com/v1" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm">
+            </div>
+            <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">Qo'shish</button>
+        </form>
+    </div>
+
+    <!-- Credentials list -->
+    {% if credentials %}
+    <div class="space-y-3">
+        {% for cred in credentials %}
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <span class="text-2xl">{{ cred.provider.logo }}</span>
+                <div>
+                    <h3 class="font-bold text-slate-800">{{ cred.label }}</h3>
+                    <p class="text-sm text-slate-500">{{ cred.provider.name }} · {{ cred.model_name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs px-2.5 py-1 rounded-full {% if cred.is_valid %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %}">
+                    {{ cred.is_valid|yesno:"Ishlaydi ✅,Tekshirilmagan" }}
+                </span>
+                <form method="post" action="{% url 'base:api_key_validate' cred.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs px-2.5 py-1 bg-sky-100 text-sky-700 rounded-full hover:bg-sky-200 transition-colors">Tekshirish</button>
+                </form>
+                <form method="post" action="{% url 'base:api_key_delete' cred.id %}" class="inline"
+                      onsubmit="return confirm('{{ cred.label }} o\'chirilsinmi?')">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs px-2.5 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors">O'chirish</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+        <div class="text-5xl mb-4">🔑</div>
+        <h3 class="text-xl font-bold text-slate-700 mb-2">Hali API kalit qo'shilmagan</h3>
+        <p class="text-slate-500">AI provayder kalitingizni qo'shing, botlar uni ishlata oladi</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

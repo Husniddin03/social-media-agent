@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ account.display_name }} - Sozlamalar{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 py-4">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'base:bot_list' %}" class="text-slate-400 hover:text-slate-600">←</a>
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-900">{{ account.display_name }}</h1>
+            <p class="text-sm text-slate-500">@{{ account.external_id }}</p>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+            <span class="text-xs px-2.5 py-1 rounded-full {% if account.is_connected %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                {{ account.is_connected|yesno:"Webhook ✅,Webhook ❌" }}
+            </span>
+            <form method="post" action="{% url 'base:bot_reconnect' account.id %}">
+                {% csrf_token %}
+                <button type="submit" class="text-xs px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition-colors">
+                    Webhook'ni ulash
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Agent sozlamalari -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 class="font-bold text-lg text-slate-800 mb-4">⚙️ Agent sozlamalari</h2>
+            <form method="post" action="{% url 'base:bot_settings_save' account.id %}" class="space-y-4">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">System Prompt</label>
+                    <textarea name="system_prompt" rows="6" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500">{{ config.system_prompt }}</textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Ohang</label>
+                        <select name="tone" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+                            <option value="do'stona" {% if config.tone == "do'stona" %}selected{% endif %}>Do'stona</option>
+                            <option value="rasmiy" {% if config.tone == "rasmiy" %}selected{% endif %}>Rasmiy</option>
+                            <option value="professional" {% if config.tone == "professional" %}selected{% endif %}>Professional</option>
+                            <option value="hazilkash" {% if config.tone == "hazilkash" %}selected{% endif %}>Hazilkash</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Til</label>
+                        <select name="language_mode" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+                            <option value="auto" {% if config.language_mode == "auto" %}selected{% endif %}>Avtomatik</option>
+                            <option value="uz" {% if config.language_mode == "uz" %}selected{% endif %}>O'zbek</option>
+                            <option value="ru" {% if config.language_mode == "ru" %}selected{% endif %}>Rus</option>
+                            <option value="en" {% if config.language_mode == "en" %}selected{% endif %}>Ingliz</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">AI Credential</label>
+                    <select name="ai_credential" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+                        <option value="">-- Tanlanmagan (free keys) --</option>
+                        {% for cred in credentials %}
+                        <option value="{{ cred.id }}" {% if config.ai_credential_id == cred.id %}selected{% endif %}>
+                            {{ cred.label }} ({{ cred.provider.name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1">Agar AI kalit tanlanmasa, Free API keys ishlatiladi</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Maksimal javob (belgi)</label>
+                    <input type="number" name="max_response_length" value="{{ config.max_response_length }}" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_enabled" {% if config.is_enabled %}checked{% endif %} class="rounded border-slate-300"> Agent faol</label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="fallback_to_human" {% if config.fallback_to_human %}checked{% endif %} class="rounded border-slate-300"> Odamga o'tkazish</label>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors">Saqlash</button>
+            </form>
+        </div>
+
+        <!-- Muloqotlar -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 class="font-bold text-lg text-slate-800 mb-4">💬 Muloqotlar</h2>
+            {% if logs %}
+            <div class="space-y-3 max-h-[600px] overflow-y-auto">
+                {% for log in logs %}
+                <div class="p-3 rounded-xl {% if log.status == 'sent' %}bg-slate-50{% elif log.status == 'failed' %}bg-red-50{% else %}bg-amber-50{% endif %}">
+                    <div class="flex justify-between text-xs text-slate-500 mb-1">
+                        <span class="font-semibold">{{ log.external_user_name }}</span>
+                        <span>{{ log.created_at|date:"H:i d.m" }}</span>
+                    </div>
+                    <p class="text-sm text-slate-700 mb-1">{{ log.incoming_message|truncatechars:100 }}</p>
+                    {% if log.ai_response %}<p class="text-xs text-slate-500 italic">{{ log.ai_response|truncatechars:100 }}</p>{% endif %}
+                    <div class="flex gap-2 mt-1 text-xs">
+                        <span class="px-1.5 py-0.5 rounded {% if log.status == 'sent' %}bg-emerald-100 text-emerald-700{% elif log.status == 'failed' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %}">{{ log.get_status_display }}</span>
+                        {% if log.response_time_ms %}<span class="text-slate-400">{{ log.response_time_ms }}ms</span>{% endif %}
+                        {% if log.tokens_used %}<span class="text-slate-400">{{ log.tokens_used }} token</span>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-slate-400">
+                <p>Hali muloqotlar yo'q</p>
+                <p class="text-xs mt-1">Botga xabar yozilsa bu yerda ko'rinadi</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
