@@ -27,9 +27,6 @@ except ImportError:
     StringSession = None
     HAS_TELETHON = False
 
-logger = logging.getLogger('apps.base')
-TELEGRAM_API = 'https://api.telegram.org/bot'
-
 
 def index(request):
     return render(request, 'base/index.html')
@@ -195,7 +192,7 @@ def chat_add(request):
             display_name=phone,
             external_id=phone,
             phone=phone,
-            api_id=int(api_id),
+            api_id=api_id,
             api_hash=api_hash,
             status='pending',
         )
@@ -213,21 +210,22 @@ def chat_add(request):
                         session_str = StringSession.save(client.session)
                         account.session_data = session_str
                         account.save(update_fields=['auth_code_hash', 'session_data'])
-                        return True, None
+                        return True
                     else:
                         account.status = 'active'
                         account.is_connected = True
                         account.display_name = f"User {phone[-4:]}"
                         account.save()
-                        return False, None
+                        return False
                 finally:
                     try:
                         await client.disconnect()
                     except:
                         pass
             
-            need_verify, error = asyncio.run(send_code())
+            need_verify = asyncio.run(send_code())
             if need_verify:
+                messages.success(request, f"{phone} ga kod yuborildi! Telegram'dan kelgan kodni kiriting.")
                 return render(request, 'base/chat_verify.html', {'account': account})
             else:
                 messages.success(request, "Account allaqachon ulangan!")
@@ -259,7 +257,7 @@ def chat_verify(request, account_id):
         async def verify_code():
             session_str = account.session_data or ''
             session = StringSession(session_str) if session_str else StringSession()
-            client = TelegramClient(session, account.api_id, account.api_hash)
+            client = TelegramClient(session, int(account.api_id), account.api_hash)
             try:
                 await client.connect()
                 
@@ -291,7 +289,6 @@ def chat_verify(request, account_id):
         error_msg = str(e)
         if 'PHONE_CODE_INVALID' in error_msg:
             messages.error(request, "Kod noto'g'ri! Qaytadan urinib ko'ring.")
-            return render(request, 'base/chat_verify.html', {'account': account})
         elif 'SESSION_PASSWORD_NEEDED' in error_msg:
             return render(request, 'base/chat_verify.html', {'account': account, 'need_password': True})
         else:
