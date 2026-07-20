@@ -185,6 +185,13 @@ def chat_add(request):
         
         # SocialAccount yaratish (pending status)
         platform = SocialPlatform.objects.get(slug='telegram')
+        
+        # Agar shu telefonga pending account bo'lsa, eski accountni o'chirib yangisini yaratamiz
+        SocialAccount.objects.filter(
+            user=request.user, platform=platform, account_type='user',
+            external_id=phone, status='pending'
+        ).delete()
+        
         account = SocialAccount.objects.create(
             user=request.user,
             platform=platform,

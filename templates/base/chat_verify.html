@@ -37,9 +37,12 @@
         <div class="mt-6 flex items-center justify-center gap-4 text-sm">
             <a href="{% url 'base:chat_list' %}" class="text-slate-400 hover:text-slate-600 transition-colors">Bekor qilish</a>
             <span class="text-slate-300">|</span>
-            <a href="{% url 'base:chat_list' %}" class="text-indigo-500 hover:text-indigo-700 transition-colors font-medium">
-                Qayta kod yuborish
-            </a>
+            <form method="post" action="{% url 'base:chat_delete' account.id %}" class="inline" onsubmit="return confirm('O\'chirilsinmi?')">
+                {% csrf_token %}
+                <button type="submit" class="text-red-500 hover:text-red-700 transition-colors font-medium">
+                    O'chirish va qayta urinish
+                </button>
+            </form>
         </div>
     </div>
 </div>

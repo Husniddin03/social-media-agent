@@ -55,6 +55,10 @@
                 <div class="flex items-center gap-2">
                     {% if acc.status == 'pending' %}
                     <a href="{% url 'base:chat_verify' acc.id %}" class="text-sm px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200">Kodni tasdiqlash</a>
+                    <form method="post" action="{% url 'base:chat_delete' acc.id %}" class="inline" onsubmit="return confirm('O\'chirilsinmi?')">
+                        {% csrf_token %}
+                        <button type="submit" class="text-sm px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">O'chirish</button>
+                    </form>
                     {% else %}
                     <a href="{% url 'base:chat_settings' acc.id %}" class="text-sm px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">Sozlamalar</a>
                     <form method="post" action="{% url 'base:chat_toggle' acc.id %}" class="inline">
