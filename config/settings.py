@@ -100,6 +100,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+LOGIN_REDIRECT_URL = '/api/'
+LOGIN_URL = '/accounts/login/'
+
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

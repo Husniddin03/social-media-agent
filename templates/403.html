@@ -1,17 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Access Denied{% endblock %}
+{% block title %}Kirish taqiqlangan{% endblock %}
 
 {% block content %}
-<div class="content">
-  <div class="page-inner">
-    <div class="card">
-      <div class="card-body text-center py-5">
-        <h1 class="display-1 text-danger">403</h1>
-        <h2 class="mb-4">Access Denied</h2>
-        <p class="text-muted">You don't have permission to access this page.</p>
-        <a href="/" class="btn btn-primary">Go to Home</a>
-      </div>
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="text-center max-w-md mx-auto px-4">
+    <div class="text-8xl font-extrabold text-red-400 mb-4">403</div>
+    <h2 class="text-2xl font-bold text-slate-800 mb-3">Kirish taqiqlangan</h2>
+    <p class="text-slate-500 mb-8">Bu sahifani ko'rish uchun sizda ruxsat yo'q. Iltimos, tizimga kiring yoki administratorga murojaat qiling.</p>
+    <div class="flex items-center justify-center gap-4">
+      <a href="{% url 'login' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-md shadow-indigo-200">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+        </svg>
+        Tizimga kirish
+      </a>
+      <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-all duration-200">
+        Bosh sahifa
+      </a>
     </div>
   </div>
 </div>
