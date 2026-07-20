@@ -27,6 +27,37 @@
         </div>
     </header>
 
+    <!-- Toast xabarlar (Django messages) -->
+    {% if messages %}
+    <div id="toast-container" class="fixed top-20 right-4 z-[100] flex flex-col gap-2 max-w-sm">
+        {% for message in messages %}
+        <div class="toast-item flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg border backdrop-blur-md animate-slide-in
+            {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800
+            {% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800
+            {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800
+            {% else %}bg-sky-50 border-sky-200 text-sky-800{% endif %}">
+            <span class="text-lg leading-none mt-0.5">
+                {% if message.tags == 'error' %}❌{% elif message.tags == 'success' %}✅{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+            </span>
+            <p class="text-sm font-medium flex-1">{{ message }}</p>
+            <button onclick="this.parentElement.remove()" class="text-current opacity-50 hover:opacity-100 transition-opacity">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.toast-item').forEach(function(el) {
+                setTimeout(function() { el.style.opacity = '0'; el.style.transform = 'translateX(100%)'; setTimeout(function() { el.remove(); }, 400); }, 5000);
+            });
+        });
+    </script>
+    <style>
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        .animate-slide-in { animation: slideIn 0.4s ease-out; }
+        .toast-item { transition: opacity 0.4s ease-out, transform 0.4s ease-out; }
+    </style>
+    {% endif %}
+
     <!-- Asosiy kontent maydoni -->
     <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
         {% block content %}

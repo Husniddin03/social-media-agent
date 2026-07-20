@@ -251,7 +251,10 @@ def chat_verify(request, account_id):
     
     if not code:
         messages.error(request, "Kodni kiriting!")
-        return redirect('base:chat_list')
+        # Formani qayta ko'rsatish, xato bilan
+        return render(request, 'base/chat_verify.html', {
+            'account': account, 'error': "Iltimos, Telegram'dan kelgan kodni kiriting!"
+        })
     
     try:
         async def verify_code():
@@ -274,26 +277,32 @@ def chat_verify(request, account_id):
                 account.display_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or account.phone
                 account.external_id = str(me.id)
                 account.save()
-                return 'success', None
+                return 'success'
             finally:
                 try:
                     await client.disconnect()
                 except:
                     pass
         
-        status, _ = asyncio.run(verify_code())
+        status = asyncio.run(verify_code())
         if status == 'success':
             messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
             return redirect('base:chat_list')
     except Exception as e:
         error_msg = str(e)
         if 'PHONE_CODE_INVALID' in error_msg:
-            messages.error(request, "Kod noto'g'ri! Qaytadan urinib ko'ring.")
+            return render(request, 'base/chat_verify.html', {
+                'account': account, 'error': "Kod noto'g'ri! Qaytadan urinib ko'ring."
+            })
         elif 'SESSION_PASSWORD_NEEDED' in error_msg:
-            return render(request, 'base/chat_verify.html', {'account': account, 'need_password': True})
+            return render(request, 'base/chat_verify.html', {
+                'account': account, 'need_password': True
+            })
         else:
-            messages.error(request, f"Xatolik: {error_msg[:200]}")
             logger.exception("Verify xatosi")
+            return render(request, 'base/chat_verify.html', {
+                'account': account, 'error': f"Xatolik: {error_msg[:150]}"
+            })
     
     return redirect('base:chat_list')
 

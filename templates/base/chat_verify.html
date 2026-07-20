@@ -7,11 +7,19 @@
         <h1 class="text-2xl font-bold text-slate-900 mb-2">Kodni tasdiqlash</h1>
         <p class="text-slate-500 mb-6">{{ account.phone }} ga Telegram'dan kod yuborildi</p>
         
+        {% if error %}
+        <div class="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium text-left flex items-start gap-2">
+            <span>❌</span>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+        
         <form method="post" action="{% url 'base:chat_verify' account.id %}" class="space-y-4">
             {% csrf_token %}
             <div>
                 <label class="block text-sm font-medium text-slate-600 mb-2">Telegram'dan kelgan kod</label>
-                <input type="text" name="code" placeholder="12345" class="w-full text-center text-2xl px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 font-bold tracking-widest" required autofocus>
+                <input type="text" name="code" placeholder="12345"
+                    class="w-full text-center text-2xl px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 font-bold tracking-widest {% if error %}border-red-300 ring-1 ring-red-200{% endif %}" required autofocus>
             </div>
             
             {% if need_password %}
@@ -21,10 +29,18 @@
             </div>
             {% endif %}
             
-            <button type="submit" class="w-full py-3 bg-sky-600 text-white font-bold rounded-xl hover:bg-sky-700 transition-colors">Tasdiqlash</button>
+            <button type="submit" class="w-full py-3 bg-sky-600 text-white font-bold rounded-xl hover:bg-sky-700 transition-colors active:scale-[0.98] transition-transform">
+                Tasdiqlash
+            </button>
         </form>
         
-        <a href="{% url 'base:chat_list' %}" class="inline-block mt-4 text-sm text-slate-400 hover:text-slate-600">Bekor qilish</a>
+        <div class="mt-6 flex items-center justify-center gap-4 text-sm">
+            <a href="{% url 'base:chat_list' %}" class="text-slate-400 hover:text-slate-600 transition-colors">Bekor qilish</a>
+            <span class="text-slate-300">|</span>
+            <button onclick="window.location.href='{% url 'base:chat_list' %}'" class="text-indigo-500 hover:text-indigo-700 transition-colors font-medium">
+                Qayta kod yuborish
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
