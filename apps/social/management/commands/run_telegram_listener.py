@@ -68,11 +68,9 @@ class Command(BaseCommand):
                         
                         config = await self._get_agent_config(account)
                         if config and config.is_enabled:
-                            client.on(
-                                asyncio.coroutine(
-                                    lambda e, a=account: self._handle_message(e, a)
-                                )
-                            )
+                            async def handler(event, a=account):
+                                await self._handle_message(event, a)
+                            client.add_event_handler(handler)
                         
                         clients.append(client)
                         self.stdout.write(f"  ✅ {account.display_name}")
