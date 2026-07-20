@@ -52,9 +52,9 @@ class Command(BaseCommand):
                     
                     agent_config = await self._get_agent_config(account)
                     if agent_config:
-                        client.add_event_handler(
-                            lambda e, a=account: self._message_handler(e, a)
-                        )
+                        async def handler(event, a=account):
+                            await self._message_handler(event, a)
+                        client.add_event_handler(handler)
                     clients.append(client)
                     self.stdout.write(f"  ✅ {account.display_name} ulandi")
                 except Exception as e:
@@ -62,7 +62,6 @@ class Command(BaseCommand):
             
             if clients:
                 self.stdout.write(f"  {len(clients)} ta account tinglanmoqda...")
-                # Barcha client'larni birga ishga tushirish
                 await asyncio.gather(*(c.run_until_disconnected() for c in clients))
             
             await asyncio.sleep(5)
