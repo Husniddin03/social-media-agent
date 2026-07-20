@@ -1,10 +1,8 @@
 import json
 import logging
 import re
-import threading
 import requests
 import asyncio
-from asgiref.sync import sync_to_async
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -165,33 +163,16 @@ def bot_reconnect(request, account_id):
 # ===== Asinxron Telethon operatsiyalari uchun yordamchi =====
 
 def run_async(coro):
-    """Asinxron kodni alohida threadda ishga tushirish"""
-    result = []
-    exc_info = []
-    
-    def _run():
-        loop = asyncio.new_event_loop()
+    """Asinxron kodni sinxron muhitda ishga tushirish"""
+    loop = asyncio.new_event_loop()
+    try:
         asyncio.set_event_loop(loop)
+        return loop.run_until_complete(coro)
+    finally:
         try:
-            r = loop.run_until_complete(coro)
-            result.append(r)
-        except Exception as e:
-            exc_info.append(e)
-        finally:
-            try:
-                loop.close()
-            except:
-                pass
-    
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-    t.join(timeout=25)
-    
-    if exc_info:
-        raise exc_info[0]
-    if not result:
-        raise TimeoutError("Telegram serveriga ulanish vaqti tugadi")
-    return result[0]
+            loop.close()
+        except:
+            pass
 
 
 # ===== CHAT (User Account) views =====
@@ -240,28 +221,29 @@ def chat_add(request):
         )
         AgentConfig.objects.get_or_create(social_account=account, defaults={'is_enabled': True})
         
-        # Telegram'dan kod so'rash — session va phone_code_hash saqlanadi
+        # Telegram'dan kod so'rash (faqat network I/O asinxron)
         error = None
-        account_id = account.id
+        result_data = {}
         try:
             async def send_code():
                 client = TelegramClient(StringSession(), int(api_id), api_hash)
                 try:
                     await client.connect()
                     result = await client.send_code_request(phone)
-                    # Thread xavfsiz: account ni DB dan qayta o'qiymiz
-                    acct = await sync_to_async(SocialAccount.objects.get)(id=account_id)
-                    acct.auth_code_hash = result.phone_code_hash
-                    acct.session_data = StringSession.save(client.session)
-                    await sync_to_async(acct.save)(update_fields=['auth_code_hash', 'session_data'])
+                    phone_code_hash = result.phone_code_hash
+                    session_data = StringSession.save(client.session)
+                    return {'hash': phone_code_hash, 'session': session_data}
                 finally:
                     try:
                         await client.disconnect()
                     except:
                         pass
             
-            run_async(send_code())
-            account.refresh_from_db()  # Template uchun ma'lumotlarni yangilaymiz
+            result_data = run_async(send_code()) or {}
+            # DB ga saqlash MAIN threadda — xavfsiz!
+            account.auth_code_hash = result_data.get('hash', '')
+            account.session_data = result_data.get('session', '')
+            account.save(update_fields=['auth_code_hash', 'session_data'])
         except Exception as e:
             error_msg = str(e)
             logger.exception("chat_add send_code xatosi")
@@ -291,11 +273,6 @@ def chat_verify(request, account_id):
             'account': account, 'error': "Iltimos, Telegram'dan kelgan kodni kiriting!"
         })
     
-    if not account.auth_code_hash or not account.session_data:
-        return render(request, 'base/chat_verify.html', {
-            'account': account, 'error': "Kod so'rovining muddati tugagan. Accountni o'chirib, qaytadan urinib ko'ring."
-        })
-    
     try:
         async def verify():
             session = StringSession(account.session_data)
@@ -311,21 +288,28 @@ def chat_verify(request, account_id):
                     kwargs['password'] = password
                 
                 user = await client.sign_in(**kwargs)
-                account.session_data = StringSession.save(client.session)
-                account.status = 'active'
-                account.is_connected = True
-                account.display_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or account.phone
-                account.external_id = str(user.id)
-                account.save()
-                return True
+                new_session = StringSession.save(client.session)
+                return {
+                    'session': new_session,
+                    'first_name': user.first_name or '',
+                    'last_name': user.last_name or '',
+                    'user_id': str(user.id),
+                }
             finally:
                 try:
                     await client.disconnect()
                 except:
                     pass
         
-        success = run_async(verify())
-        if success:
+        user_data = run_async(verify())
+        if user_data:
+            # DB ga saqlash MAIN threadda
+            account.session_data = user_data['session']
+            account.status = 'active'
+            account.is_connected = True
+            account.display_name = f"{user_data['first_name']} {user_data['last_name']}".strip() or account.phone
+            account.external_id = user_data['user_id']
+            account.save()
             messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
             return redirect('base:chat_list')
     except Exception as e:
@@ -351,7 +335,7 @@ def chat_verify(request, account_id):
         else:
             logger.exception("Verify xatosi")
             return render(request, 'base/chat_verify.html', {
-                'account': account, 'error': f"Xatolik: {error_msg[:200]}"
+                'account': account, 'error': f"Xatolik: {error_msg[:300]}"
             })
     
     return render(request, 'base/chat_verify.html', {
