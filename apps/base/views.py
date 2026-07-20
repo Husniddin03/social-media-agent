@@ -159,6 +159,18 @@ def bot_reconnect(request, account_id):
     return redirect('base:bot_settings', account_id=account.id)
 
 
+# ===== Asinxron Telethon operatsiyalari uchun yordamchi =====
+
+def run_async(coro):
+    """asyncio.run() o'rniga — loop.new_event_loop() bilan xavfsiz ishlatish"""
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
 # ===== CHAT (User Account) views =====
 
 @login_required
@@ -230,7 +242,7 @@ def chat_add(request):
                     except:
                         pass
             
-            need_verify = asyncio.run(send_code())
+            need_verify = run_async(send_code())
             if need_verify:
                 messages.success(request, f"{phone} ga kod yuborildi! Telegram'dan kelgan kodni kiriting.")
                 return render(request, 'base/chat_verify.html', {'account': account})
@@ -269,10 +281,14 @@ def chat_verify(request, account_id):
             try:
                 await client.connect()
                 
+                # phone_code_hash ni eksplitsit uzatamiz (StringSession dan o'qilmasligi mumkin)
+                kwargs = {'phone': account.phone, 'code': code}
+                if account.auth_code_hash:
+                    kwargs['phone_code_hash'] = account.auth_code_hash
                 if password:
-                    await client.sign_in(phone=account.phone, code=code, password=password)
-                else:
-                    await client.sign_in(phone=account.phone, code=code)
+                    kwargs['password'] = password
+                
+                await client.sign_in(**kwargs)
                 
                 account.session_data = StringSession.save(client.session)
                 account.status = 'active'
@@ -289,7 +305,7 @@ def chat_verify(request, account_id):
                 except:
                     pass
         
-        status = asyncio.run(verify_code())
+        status = run_async(verify_code())
         if status == 'success':
             messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
             return redirect('base:chat_list')
