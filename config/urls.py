@@ -4,6 +4,7 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls, name='admin'),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('', include('apps.base.urls')),
     path('api/', include('apps.api.urls')),
     path('telegram/telegram/', include('apps.telegram.telegram.urls')),

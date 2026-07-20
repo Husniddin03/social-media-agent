@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Django Darslari{% endblock %}</title>
     {% tailwind_css %}
+    {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen font-sans antialiased overflow-x-hidden">
 
@@ -17,7 +19,7 @@
                 <span class="font-bold text-xl tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Django Darslari</span>
             </a>
             <nav class="flex items-center gap-4">
-                <a href="{% url 'api:index' %}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Api</a>
+                <a href="{% url 'api:manager' %}" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Api</a>
                 <a href="/admin" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-2 px-3 rounded-md hover:bg-slate-50">Admin panel</a>
             </nav>
         </div>
@@ -77,5 +79,6 @@
         </div>
     </footer>
 
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

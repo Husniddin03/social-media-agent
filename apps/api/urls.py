@@ -1,11 +1,19 @@
-from django.urls import path
-
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
 app_name = 'api'
 
+# DRF ViewSets uchun router
+router = DefaultRouter()
+router.register(r'keys', views.FreeApiKeyViewSet, basename='freeapikey')
+router.register(r'logs', views.ApiUsageLogViewSet, basename='apiusagelog')
+router.register(r'analytics', views.ApiAnalyticsViewSet, basename='apianalytics')
+
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('create-token/', views.create_token, name='create_token'),
-    path('delete-token/<int:token_id>/', views.delete_token, name='delete_token'),
+    # Main frontend template
+    path('', views.manager, name='manager'),
+    
+    # DRF API endpoints
+    path('api/', include(router.urls)),
 ]
