@@ -89,6 +89,12 @@ class FreeApiKey(models.Model):
     
     def total_use_count(self):
         return sum(e.get('use_count', 0) for e in (self.keys or []))
+    
+    @property
+    def keys_summary(self):
+        total = len(self.keys or [])
+        valid = self.valid_keys_count()
+        return f"{valid}/{total} ishlayapti"
 
 
 class ApiUsageLog(models.Model):

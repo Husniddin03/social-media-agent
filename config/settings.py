@@ -27,7 +27,10 @@ INSTALLED_APPS = [
     'theme',
     'apps.base',
     'apps.api',
-    'apps.telegram.bot',
+    'apps.social',
+    'apps.social.telegram',
+    'apps.ai_providers',
+    'apps.agents',
     'rest_framework',
 ]
 
@@ -97,6 +100,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

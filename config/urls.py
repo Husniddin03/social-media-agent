@@ -7,8 +7,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('', include('apps.base.urls')),
     path('api/', include('apps.api.urls')),
-    path('telegram/telegram/', include('apps.telegram.telegram.urls')),
-    path('telegram/bot/', include('apps.telegram.bot.urls')),
+    path('social/telegram/', include('apps.social.telegram.urls')),
 ]
 
 

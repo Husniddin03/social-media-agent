@@ -77,13 +77,14 @@ class FreeApiKeyListSerializer(serializers.ModelSerializer):
     keys_summary = serializers.CharField(read_only=True)
     provider_display = serializers.CharField(source='get_provider_display', read_only=True)
     valid_keys_count = serializers.IntegerField(read_only=True)
+    total_use_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = FreeApiKey
         fields = [
             'id', 'name', 'purpose', 'priority', 'is_active',
             'provider', 'provider_display', 'base_url', 'model_name',
-            'keys_summary', 'valid_keys_count', 'created_at', 'updated_at'
+            'keys_summary', 'valid_keys_count', 'total_use_count', 'created_at', 'updated_at'
         ]
 
 

@@ -1,0 +1,114 @@
+[
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 1,
+    "fields": {
+      "slug": "openai",
+      "name": "OpenAI",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": false,
+      "default_base_url": "https://api.openai.com/v1",
+      "logo": "🤖",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 2,
+    "fields": {
+      "slug": "openrouter",
+      "name": "OpenRouter",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": true,
+      "default_base_url": "https://openrouter.ai/api/v1",
+      "logo": "🤖",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 3,
+    "fields": {
+      "slug": "groq",
+      "name": "Groq",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": true,
+      "default_base_url": "https://api.groq.com/openai/v1",
+      "logo": "⚡",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 4,
+    "fields": {
+      "slug": "gemini",
+      "name": "Google Gemini",
+      "adapter_class_path": "",
+      "is_free_tier_available": true,
+      "default_base_url": "",
+      "logo": "🪨",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 5,
+    "fields": {
+      "slug": "deepseek",
+      "name": "DeepSeek",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": true,
+      "default_base_url": "https://api.deepseek.com/v1",
+      "logo": "🔮",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 6,
+    "fields": {
+      "slug": "mistral",
+      "name": "Mistral",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": true,
+      "default_base_url": "https://api.mistral.ai/v1",
+      "logo": "🔴",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 7,
+    "fields": {
+      "slug": "cerebras",
+      "name": "Cerebras",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": true,
+      "default_base_url": "https://api.cerebras.ai/v1",
+      "logo": "💠",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  },
+  {
+    "model": "ai_providers.aiprovider",
+    "pk": 8,
+    "fields": {
+      "slug": "ollama",
+      "name": "Ollama (lokal)",
+      "adapter_class_path": "apps.ai_providers.adapters.openai_compat.OpenAICompatAdapter",
+      "is_free_tier_available": true,
+      "default_base_url": "http://localhost:11434/v1",
+      "logo": "🖥️",
+      "is_active": true,
+      "created_at": "2026-07-20T00:00:00Z"
+    }
+  }
+]

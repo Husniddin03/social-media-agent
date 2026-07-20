@@ -1,0 +1,52 @@
+[
+  {
+    "model": "social.socialplatform",
+    "pk": 1,
+    "fields": {
+      "slug": "telegram",
+      "name": "Telegram",
+      "logo": "💬",
+      "is_active": true
+    }
+  },
+  {
+    "model": "social.socialplatform",
+    "pk": 2,
+    "fields": {
+      "slug": "instagram",
+      "name": "Instagram",
+      "logo": "📷",
+      "is_active": true
+    }
+  },
+  {
+    "model": "social.socialplatform",
+    "pk": 3,
+    "fields": {
+      "slug": "facebook",
+      "name": "Facebook",
+      "logo": "👥",
+      "is_active": true
+    }
+  },
+  {
+    "model": "social.socialplatform",
+    "pk": 4,
+    "fields": {
+      "slug": "youtube",
+      "name": "YouTube",
+      "logo": "🎥",
+      "is_active": true
+    }
+  },
+  {
+    "model": "social.socialplatform",
+    "pk": 5,
+    "fields": {
+      "slug": "tiktok",
+      "name": "TikTok",
+      "logo": "📱",
+      "is_active": true
+    }
+  }
+]
