@@ -164,7 +164,7 @@ def bot_reconnect(request, account_id):
 # ===== Asinxron Telethon operatsiyalari uchun yordamchi =====
 
 def run_async(coro):
-    """Asinxron kodni sinxron muhitda ishga tushirish (thread bilan)"""
+    """Asinxron kodni alohida threadda ishga tushirish"""
     result = []
     exc_info = []
     
@@ -182,7 +182,7 @@ def run_async(coro):
             except:
                 pass
     
-    t = threading.Thread(target=_run)
+    t = threading.Thread(target=_run, daemon=True)
     t.start()
     t.join(timeout=25)
     
@@ -241,15 +241,20 @@ def chat_add(request):
         
         # Telegram'dan kod so'rash — session va phone_code_hash saqlanadi
         error = None
+        account_id = account.id
         try:
+            from asgiref.sync import sync_to_async
+            
             async def send_code():
                 client = TelegramClient(StringSession(), int(api_id), api_hash)
                 try:
                     await client.connect()
                     result = await client.send_code_request(phone)
-                    account.auth_code_hash = result.phone_code_hash
-                    account.session_data = StringSession.save(client.session)
-                    account.save(update_fields=['auth_code_hash', 'session_data'])
+                    # Thread xavfsiz: account ni DB dan qayta o'qiymiz
+                    acct = await sync_to_async(SocialAccount.objects.get)(id=account_id)
+                    acct.auth_code_hash = result.phone_code_hash
+                    acct.session_data = StringSession.save(client.session)
+                    await sync_to_async(acct.save)(update_fields=['auth_code_hash', 'session_data'])
                 finally:
                     try:
                         await client.disconnect()
