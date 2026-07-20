@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.shortcuts import redirect
 from rest_framework.routers import DefaultRouter
 from . import views
 
@@ -11,9 +12,9 @@ router.register(r'logs', views.ApiUsageLogViewSet, basename='apiusagelog')
 router.register(r'analytics', views.ApiAnalyticsViewSet, basename='apianalytics')
 
 urlpatterns = [
-    # Main frontend template
-    path('', views.manager, name='manager'),
+    # Eski frontend URL - yangi API Keys sahifasiga redirect
+    path('', lambda req: redirect('base:api_keys'), name='manager'),
     
-    # DRF API endpoints
+    # DRF API endpoints (ichki foydalanish uchun)
     path('api/', include(router.urls)),
 ]
