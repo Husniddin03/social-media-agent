@@ -2,7 +2,6 @@ import json
 import logging
 import requests
 import asyncio
-from telethon.sessions import StringSession
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -14,6 +13,19 @@ from django.conf import settings
 from apps.social.models import SocialPlatform, SocialAccount
 from apps.agents.models import AgentConfig, ConversationLog
 from apps.ai_providers.models import AIProvider, AIProviderCredential
+
+logger = logging.getLogger('apps.base')
+TELEGRAM_API = 'https://api.telegram.org/bot'
+
+# Telethon'ni lazy import qilamiz (chat accountlar uchun)
+try:
+    from telethon import TelegramClient
+    from telethon.sessions import StringSession
+    HAS_TELETHON = True
+except ImportError:
+    TelegramClient = None
+    StringSession = None
+    HAS_TELETHON = False
 
 logger = logging.getLogger('apps.base')
 TELEGRAM_API = 'https://api.telegram.org/bot'
@@ -170,6 +182,10 @@ def chat_add(request):
             messages.error(request, "Barcha maydonlarni to'ldiring!")
             return redirect('base:chat_list')
         
+        if not HAS_TELETHON:
+            messages.error(request, "Telethon kutubxonasi o'rnatilmagan!")
+            return redirect('base:chat_list')
+        
         # SocialAccount yaratish (pending status)
         platform = SocialPlatform.objects.get(slug='telegram')
         account = SocialAccount.objects.create(
@@ -179,7 +195,7 @@ def chat_add(request):
             display_name=phone,
             external_id=phone,
             phone=phone,
-            api_id=api_id,
+            api_id=int(api_id),
             api_hash=api_hash,
             status='pending',
         )
@@ -189,41 +205,49 @@ def chat_add(request):
         try:
             async def send_code():
                 client = TelegramClient(StringSession(), int(api_id), api_hash)
-                await client.connect()
-                if not await client.is_user_authorized():
-                    result = await client.send_code_request(phone)
-                    account.auth_code_hash = result.phone_code_hash
-                    account.session_data = StringSession.save(client.session)
-                    await client.disconnect()
-                    account.save(update_fields=['auth_code_hash', 'session_data'])
-                    return True
-                else:
-                    account.status = 'active'
-                    account.is_connected = True
-                    account.display_name = f"User {phone[-4:]}"
-                    account.save()
-                    await client.disconnect()
-                    return False
+                try:
+                    await client.connect()
+                    if not await client.is_user_authorized():
+                        result = await client.send_code_request(phone)
+                        account.auth_code_hash = result.phone_code_hash
+                        session_str = StringSession.save(client.session)
+                        account.session_data = session_str
+                        account.save(update_fields=['auth_code_hash', 'session_data'])
+                        return True, None
+                    else:
+                        account.status = 'active'
+                        account.is_connected = True
+                        account.display_name = f"User {phone[-4:]}"
+                        account.save()
+                        return False, None
+                finally:
+                    try:
+                        await client.disconnect()
+                    except:
+                        pass
             
-            from telethon import TelegramClient
-            need_verify = asyncio.run(send_code())
+            need_verify, error = asyncio.run(send_code())
             if need_verify:
-                messages.success(request, f"{phone} ga kod yuborildi! Telegram'dan kelgan kodni kiriting.")
                 return render(request, 'base/chat_verify.html', {'account': account})
             else:
                 messages.success(request, "Account allaqachon ulangan!")
         except Exception as e:
             logger.exception("Auth code xatosi")
-            messages.error(request, f"Xatolik: {e}")
+            messages.error(request, f"Xatolik: Telefon raqam yoki API ma'lumotlarini tekshiring")
         return redirect('base:chat_list')
     return redirect('base:chat_list')
 
 
 @login_required
-@require_POST
 def chat_verify(request, account_id):
-    """Auth code ni tasdiqlash"""
-    account = get_object_or_404(SocialAccount, id=account_id, user=request.user)
+    """Auth code ni tasdiqlash - GET (form) va POST (process)"""
+    account = get_object_or_404(SocialAccount, id=account_id, user=request.user, account_type='user')
+    
+    # GET so'rov - formani ko'rsatish
+    if request.method == 'GET':
+        return render(request, 'base/chat_verify.html', {'account': account})
+    
+    # POST so'rov - kodni tekshirish
     code = request.POST.get('code', '').strip()
     password = request.POST.get('password', '').strip()
     
@@ -233,39 +257,47 @@ def chat_verify(request, account_id):
     
     try:
         async def verify_code():
-            from telethon import TelegramClient
-            session = StringSession(account.session_data) if account.session_data else StringSession()
-            client = TelegramClient(session, int(account.api_id), account.api_hash)
-            await client.connect()
-            
-            if password:
-                await client.sign_in(phone=account.phone, code=code, password=password)
-            else:
-                await client.sign_in(phone=account.phone, code=code)
-            
-            account.session_data = StringSession.save(client.session)
-            account.status = 'active'
-            account.is_connected = True
-            
-            me = await client.get_me()
-            account.display_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or account.phone
-            account.external_id = str(me.id)
-            await client.disconnect()
-            account.save()
-            return True
+            session_str = account.session_data or ''
+            session = StringSession(session_str) if session_str else StringSession()
+            client = TelegramClient(session, account.api_id, account.api_hash)
+            try:
+                await client.connect()
+                
+                if password:
+                    await client.sign_in(phone=account.phone, code=code, password=password)
+                else:
+                    await client.sign_in(phone=account.phone, code=code)
+                
+                account.session_data = StringSession.save(client.session)
+                account.status = 'active'
+                account.is_connected = True
+                
+                me = await client.get_me()
+                account.display_name = f"{me.first_name or ''} {me.last_name or ''}".strip() or account.phone
+                account.external_id = str(me.id)
+                account.save()
+                return 'success', None
+            finally:
+                try:
+                    await client.disconnect()
+                except:
+                    pass
         
-        success = asyncio.run(verify_code())
-        if success:
+        status, _ = asyncio.run(verify_code())
+        if status == 'success':
             messages.success(request, f"{account.display_name} muvaffaqiyatli ulandi! ✅")
+            return redirect('base:chat_list')
     except Exception as e:
         error_msg = str(e)
         if 'PHONE_CODE_INVALID' in error_msg:
             messages.error(request, "Kod noto'g'ri! Qaytadan urinib ko'ring.")
+            return render(request, 'base/chat_verify.html', {'account': account})
         elif 'SESSION_PASSWORD_NEEDED' in error_msg:
             return render(request, 'base/chat_verify.html', {'account': account, 'need_password': True})
         else:
             messages.error(request, f"Xatolik: {error_msg[:200]}")
             logger.exception("Verify xatosi")
+    
     return redirect('base:chat_list')
 
 
