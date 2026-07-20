@@ -4,7 +4,7 @@
 <div class="max-w-4xl mx-auto space-y-8 py-4">
     <!-- Header -->
     <div class="flex items-center gap-4">
-        <a href="{% url 'dashboard' %}" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <a href="{% url 'social_telegram:dashboard' %}" class="text-slate-400 hover:text-slate-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
@@ -14,7 +14,7 @@
             <p class="text-slate-500">@{{ account.external_id }} | {{ account.is_connected|yesno:"Webhook ✅,Webhook ❌" }}</p>
         </div>
         <div class="ml-auto flex gap-2">
-            <form method="post" action="{% url 'reconnect_webhook' account.id %}">
+            <form method="post" action="{% url 'social_telegram:reconnect_webhook' account.id %}">
                 {% csrf_token %}
                 <button type="submit" class="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors">
                     Webhook'ni qayta ulash
@@ -27,7 +27,7 @@
         <!-- Agent sozlamalari -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h2 class="text-lg font-bold text-slate-800 mb-4">⚙️ Agent sozlamalari</h2>
-            <form method="post" action="{% url 'update_agent_config' account.id %}" class="space-y-4">
+            <form method="post" action="{% url 'social_telegram:update_agent_config' account.id %}" class="space-y-4">
                 {% csrf_token %}
                 
                 <div>

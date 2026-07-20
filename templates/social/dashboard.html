@@ -29,7 +29,7 @@
     <!-- Add Bot form -->
     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h2 class="text-lg font-bold text-slate-800 mb-4">➕ Yangi bot qo'shish</h2>
-        <form method="post" action="{% url 'add_bot' %}" class="flex gap-3 items-end">
+        <form method="post" action="{% url 'social_telegram:add_bot' %}" class="flex gap-3 items-end">
             {% csrf_token %}
             <div class="flex-1">
                 <label class="block text-sm font-medium text-slate-600 mb-1">Telegram Bot Token</label>
@@ -63,20 +63,20 @@
                     <span class="text-xs px-2 py-1 rounded-full {% if account.is_connected %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
                         {{ account.is_connected|yesno:"Webhook ✅,Webhook ❌" }}
                     </span>
-                    <a href="{% url 'bot_settings' account.id %}" class="text-sm px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                    <a href="{% url 'social_telegram:bot_settings' account.id %}" class="text-sm px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
                         Sozlamalar
                     </a>
                 </div>
             </div>
             <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
                 <span>Qo'shilgan: {{ account.connected_at|date:"d.m.Y H:i" }}</span>
-                <form method="post" action="{% url 'toggle_bot_status' account.id %}" class="inline">
+                <form method="post" action="{% url 'social_telegram:toggle_bot_status' account.id %}" class="inline">
                     {% csrf_token %}
                     <button type="submit" class="text-indigo-500 hover:text-indigo-700">
                         {{ account.status|yesno:"To'xtatish,Faqllashtirish" }}
                     </button>
                 </form>
-                <form method="post" action="{% url 'delete_bot' account.id %}" class="inline" 
+                <form method="post" action="{% url 'social_telegram:delete_bot' account.id %}" class="inline" 
                       onsubmit="return confirm('{{ account.display_name }} o\'chirilsinmi?')">
                     {% csrf_token %}
                     <button type="submit" class="text-red-500 hover:text-red-700">O'chirish</button>
