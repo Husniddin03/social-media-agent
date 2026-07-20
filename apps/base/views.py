@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import requests
 import asyncio
 
@@ -163,18 +164,12 @@ def bot_reconnect(request, account_id):
 
 def run_async(coro):
     """Asinxron kodni sinxron muhitda ishga tushirish"""
-    created = False
+    loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        created = True
-    try:
         return loop.run_until_complete(coro)
     finally:
-        if created:
-            loop.close()
+        loop.close()
 
 
 # ===== CHAT (User Account) views =====
@@ -331,7 +326,6 @@ def chat_verify(request, account_id):
                 'account': account, 'need_password': True
             })
         elif 'FLOOD_WAIT_' in error_msg:
-            import re
             m = re.search(r'(\d+)', error_msg)
             wait = m.group(1) if m else '60'
             return render(request, 'base/chat_verify.html', {
