@@ -163,8 +163,8 @@ def bot_reconnect(request, account_id):
 
 def run_async(coro):
     """asyncio.run() o'rniga — loop.new_event_loop() bilan xavfsiz ishlatish"""
+    loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop.run_until_complete(coro)
     finally:
@@ -247,11 +247,9 @@ def chat_add(request):
 
 @login_required
 def chat_verify(request, account_id):
-    """Auth code ni tasdiqlash - GET (form) va POST (process)"""
-    """
+    """Auth code ni tasdiqlash - GET (form) va POST (process)
     MUHIM: Yangi client yaratiladi, eski session RESTORE QILINMAYDI!
-    Faqat phone_code_hash ishlatiladi — Telegram API shartiga ko'ra.
-    """
+    Faqat phone_code_hash ishlatiladi — Telegram API shartiga ko'ra."""
     account = get_object_or_404(SocialAccount, id=account_id, user=request.user, account_type='user')
     
     # GET so'rov - formani ko'rsatish
