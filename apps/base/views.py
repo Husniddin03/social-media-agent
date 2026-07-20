@@ -273,6 +273,11 @@ def chat_verify(request, account_id):
             'account': account, 'error': "Iltimos, Telegram'dan kelgan kodni kiriting!"
         })
     
+    if not account.auth_code_hash or not account.session_data:
+        return render(request, 'base/chat_verify.html', {
+            'account': account, 'error': "Kod so'rovining muddati tugagan. Accountni o'chirib, qaytadan urinib ko'ring."
+        })
+    
     try:
         async def verify():
             session = StringSession(account.session_data)
