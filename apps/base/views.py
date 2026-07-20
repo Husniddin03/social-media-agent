@@ -4,6 +4,7 @@ import re
 import threading
 import requests
 import asyncio
+from asgiref.sync import sync_to_async
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -243,8 +244,6 @@ def chat_add(request):
         error = None
         account_id = account.id
         try:
-            from asgiref.sync import sync_to_async
-            
             async def send_code():
                 client = TelegramClient(StringSession(), int(api_id), api_hash)
                 try:
@@ -262,6 +261,7 @@ def chat_add(request):
                         pass
             
             run_async(send_code())
+            account.refresh_from_db()  # Template uchun ma'lumotlarni yangilaymiz
         except Exception as e:
             error_msg = str(e)
             logger.exception("chat_add send_code xatosi")
