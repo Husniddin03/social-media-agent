@@ -840,9 +840,6 @@
   .inline {
     display: inline;
   }
-  .inline-block {
-    display: inline-block;
-  }
   .inline-flex {
     display: inline-flex;
   }
@@ -1639,11 +1636,6 @@
   @media (hover: hover) {
     .hover\:text-indigo-600:hover {
       color: var(--color-indigo-600);
-    }
-  }
-  @media (hover: hover) {
-    .hover\:text-indigo-700:hover {
-      color: var(--color-indigo-700);
     }
   }
   @media (hover: hover) {

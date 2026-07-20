@@ -11,7 +11,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.db import close_old_connections
 from asgiref.sync import sync_to_async
-from telethon import TelegramClient
+from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 
 from apps.social.models import SocialAccount
@@ -68,9 +68,9 @@ class Command(BaseCommand):
                         
                         config = await self._get_agent_config(account)
                         if config and config.is_enabled:
+                            @client.on(events.NewMessage)
                             async def handler(event, a=account):
                                 await self._handle_message(event, a)
-                            client.add_event_handler(handler)
                         
                         clients.append(client)
                         self.stdout.write(f"  ✅ {account.display_name}")

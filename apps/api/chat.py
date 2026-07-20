@@ -110,20 +110,31 @@ def _openai_compatible_structured(base_url, key, model, system, msgs, schema):
 
 
 def _gemini_structured(key, model, system, msgs, schema):
-    from google import genai
-    from google.genai import types
-    prompt = "\n".join(
-        f"{'Mijoz' if m['role'] == 'user' else 'Yordamchi'}: {m['content']}"
-        for m in _messages_from_history(msgs)
+    """Gemini API'sini OpenAI-mos endpoint orqali chaqirish — google-genai kerak emas"""
+    body_messages = _messages_from_history(msgs)
+    schema_txt = json.dumps(schema, ensure_ascii=False)
+    sys_full = (system or '') + (
+        "\n\nJAVOBNI FAQAT quyidagi JSON Schema shakliga mos, boshqa HECH "
+        f"NARSASIZ (izohsiz, ```siz) JSON obyekt sifatida qaytar:\n{schema_txt}"
     )
-    client = genai.Client(api_key=key)
-    cfg = types.GenerateContentConfig(
-        system_instruction=system or None,
-        response_mime_type='application/json',
-        response_json_schema=schema,
+    # Gemini OpenAI-mos endpoint
+    base = 'https://generativelanguage.googleapis.com/v1beta/openai'
+    resp = requests.post(
+        f'{base}/chat/completions',
+        headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
+        json={
+            'model': model,
+            'messages': [{'role': 'system', 'content': sys_full}] + body_messages,
+            'response_format': {'type': 'json_object'},
+            'max_tokens': 1200,
+        },
+        timeout=_TIMEOUT,
     )
-    resp = client.models.generate_content(model=model, contents=prompt, config=cfg)
-    parsed = json.loads(resp.text)
+    if resp.status_code >= 400:
+        raise RuntimeError(f'Gemini xato {resp.status_code}: {resp.text[:200]}')
+    data = resp.json()
+    text = _strip_code_fence((data.get('choices') or [{}])[0].get('message', {}).get('content', '') or '')
+    parsed = json.loads(text)
     if not isinstance(parsed, dict):
         raise ValueError('parsed natija dict emas')
     _validate_against_schema(parsed, schema)

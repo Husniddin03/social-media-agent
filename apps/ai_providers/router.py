@@ -2,6 +2,7 @@
 import logging
 from .adapters.base import AIResponse
 from .adapters.openai_compat import OpenAICompatAdapter
+from .adapters.gemini import GeminiAdapter
 from .models import AIProvider, AIProviderCredential
 
 logger = logging.getLogger('apps.ai_providers.router')
@@ -24,6 +25,7 @@ register_adapter('mistral', OpenAICompatAdapter)
 register_adapter('cerebras', OpenAICompatAdapter)
 register_adapter('github_models', OpenAICompatAdapter)
 register_adapter('dashscope', OpenAICompatAdapter)
+register_adapter('gemini', GeminiAdapter)
 
 
 def get_adapter(credential: AIProviderCredential) -> OpenAICompatAdapter | None:
