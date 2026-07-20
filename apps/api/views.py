@@ -7,7 +7,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-from django.shortcuts import render
 
 from .detector import check_custom_endpoint, detect_and_check
 from .models import FreeApiKey, ApiUsageLog, ApiAnalytics, new_key_entry
@@ -22,13 +21,6 @@ logger = logging.getLogger('apps.api.views')
 # Ro'yxat sahifasi ochilganda, so'nggi tekshiruvdan shuncha soniya o'tgan
 # bo'lsa — real-vaqt ma'lumot uchun avtomatik qayta tekshiriladi.
 _AUTO_RECHECK_AFTER = 60
-
-
-def manager(request):
-    """React frontend uchun template"""
-    if not request.user.is_staff and not request.user.is_superuser:
-        return render(request, '403.html', status=403)
-    return render(request, 'api/index.html')
 
 
 class IsStaffUser(permissions.BasePermission):
