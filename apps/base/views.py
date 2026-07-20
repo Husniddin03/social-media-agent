@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import threading
 import requests
 import asyncio
 
@@ -163,13 +164,33 @@ def bot_reconnect(request, account_id):
 # ===== Asinxron Telethon operatsiyalari uchun yordamchi =====
 
 def run_async(coro):
-    """Asinxron kodni sinxron muhitda ishga tushirish"""
-    loop = asyncio.new_event_loop()
-    try:
+    """Asinxron kodni sinxron muhitda ishga tushirish (thread bilan)"""
+    result = []
+    exc_info = []
+    
+    def _run():
+        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+        try:
+            r = loop.run_until_complete(coro)
+            result.append(r)
+        except Exception as e:
+            exc_info.append(e)
+        finally:
+            try:
+                loop.close()
+            except:
+                pass
+    
+    t = threading.Thread(target=_run)
+    t.start()
+    t.join(timeout=25)
+    
+    if exc_info:
+        raise exc_info[0]
+    if not result:
+        raise TimeoutError("Telegram serveriga ulanish vaqti tugadi")
+    return result[0]
 
 
 # ===== CHAT (User Account) views =====
@@ -239,16 +260,7 @@ def chat_add(request):
         except Exception as e:
             error_msg = str(e)
             logger.exception("chat_add send_code xatosi")
-            if 'TIMEOUT' in error_msg or 'timeout' in error_msg:
-                error = "Telegram serveriga ulanish vaqti tugadi."
-            elif 'PHONE_NUMBER_INVALID' in error_msg:
-                error = "Telefon raqam noto'g'ri! Xalqaro formatda kiriting (+998...)."
-            elif 'PHONE_NUMBER_BANNED' in error_msg:
-                error = "Bu telefon raqam Telegram'da bloklangan!"
-            elif 'API_ID_INVALID' in error_msg or 'API_ID_PUBLISHED_FLOOD' in error_msg:
-                error = "API ID yoki API Hash noto'g'ri! my.telegram.org dan tekshiring."
-            else:
-                error = f"Xatolik: {error_msg[:200]}"
+            error = f"Xatolik: {error_msg[:300]}"
         
         # Verify sahifasiga o'tamiz (xato bo'lsa ham)
         return render(request, 'base/chat_verify.html', {
