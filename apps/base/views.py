@@ -250,8 +250,6 @@ def chat_verify(request, account_id):
     password = request.POST.get('password', '').strip()
     
     if not code:
-        messages.error(request, "Kodni kiriting!")
-        # Formani qayta ko'rsatish, xato bilan
         return render(request, 'base/chat_verify.html', {
             'account': account, 'error': "Iltimos, Telegram'dan kelgan kodni kiriting!"
         })
