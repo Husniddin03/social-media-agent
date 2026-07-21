@@ -68,9 +68,9 @@ class Command(BaseCommand):
                         
                         config = await self._get_agent_config(account)
                         if config and config.is_enabled:
-                            @client.on(events.NewMessage)
-                            async def handler(event, a=account):
-                                await self._handle_message(event, a)
+                        @client.on(events.NewMessage(incoming=True))
+                        async def handler(event, a=account):
+                            await self._handle_message(event, a)
                         
                         clients.append(client)
                         self.stdout.write(f"  ✅ {account.display_name}")
@@ -89,7 +89,7 @@ class Command(BaseCommand):
 
     async def _handle_message(self, event, account):
         """Xabar kelganda"""
-        if not event.message.text or event.message.out:
+        if not event.raw_text or not event.is_private:
             return
         
         try:
@@ -97,15 +97,20 @@ class Command(BaseCommand):
             sender_id = str(sender.id) if sender else 'unknown'
             sender_name = f"{sender.first_name or ''} {sender.last_name or ''}".strip() or sender_id
             
+            logger.info("📩 Xabar keldi: from=%s, text=%.50s", sender_name, event.raw_text)
+            
             result = await sync_to_async(handle_incoming)(
                 social_account=account,
                 external_user_id=sender_id,
                 external_user_name=sender_name,
-                message_text=event.message.text,
+                message_text=event.raw_text,
             )
             
             response = result.get('response_text', '')
             if response:
-                await event.client.send_message(sender_id, response)
+                await event.reply(response)
+                logger.info("✅ Javob yuborildi: %.50s", response)
+            else:
+                logger.warning("⚠️ Javob bo'sh: result=%s", result)
         except Exception as e:
-            logger.exception("Xabarni qayta ishlashda xato")
+            logger.exception("Xabarni qayta ishlashda xato: %s", e)
