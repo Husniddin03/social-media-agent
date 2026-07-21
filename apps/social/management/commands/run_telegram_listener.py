@@ -68,9 +68,9 @@ class Command(BaseCommand):
                         
                         config = await self._get_agent_config(account)
                         if config and config.is_enabled:
-                        @client.on(events.NewMessage(incoming=True))
-                        async def handler(event, a=account):
-                            await self._handle_message(event, a)
+                            @client.on(events.NewMessage(incoming=True))
+                            async def handler(event, a=account):
+                                await self._handle_message(event, a)
                         
                         clients.append(client)
                         self.stdout.write(f"  ✅ {account.display_name}")
